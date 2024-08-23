@@ -1,0 +1,144 @@
+-- SIMPLE BANK APP --
+
+-- ALL THE TRIGGERS FOR POSTGRESQL DB IN plpgsql --
+
+-- LOG INTO THE clients_audits_changes TABLE THE DATA CHANGED BY THE update_user_data FUNCTION --
+CREATE OR REPLACE FUNCTION public.log_account_user_changes()
+RETURNS TRIGGER
+VOLATILE NOT LEAKPROOF
+AS
+$$
+BEGIN
+    -- code
+    -- IF THE FIRST NAME, LAST NAME OR ADDRESS HAD UPDATES IT WILL STORE IN THE LOG TABLE EVEN THE NOT CHANGED ONES --
+	IF( NEW.account_user_first_name <> OLD.account_user_first_name
+        OR NEW.account_user_last_name <> OLD.account_user_last_name
+        OR NEW.account_user_address <> OLD.account_user_address)
+    THEN
+		INSERT INTO clients_audits_changes(
+            account_number,
+            account_user_first_name,
+            account_user_last_name,
+            account_user_address,
+            changed_on
+        ) VALUES (
+            OLD.account_number,
+            OLD.account_user_first_name,
+            OLD.account_user_last_name,
+            OLD.account_user_address,
+            NOW());
+	END IF;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- TRIGGER AFTER UPDATE FOR THE log_account_user_changes FUNCTION --
+
+CREATE TRIGGER after_changes_clients_info_trigger
+AFTER UPDATE ON clients_info
+FOR EACH ROW
+EXECUTE FUNCTION log_account_user_changes();
+
+-- LOG INTO THE clients_audits_deletes TABLE THE DELETED USERS BY THE delete_user FUNCTION --
+-- FUNCTION THAT INSERTS THE DELETED DATA IN THE client_audits_deletes --
+CREATE OR REPLACE FUNCTION public.log_account_user_deletes()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+VOLATILE NOT LEAKPROOF
+AS
+$$
+BEGIN
+    -- code
+    -- INSERT THE DELETED CLIENT DATA IN THE LOG TABLE --
+    INSERT INTO clients_audits_deletes(
+        account_number,
+        account_user_social_number,
+        account_user_first_name,
+        account_user_last_name,
+        account_user_birthdate,
+        account_user_mother_full_name,
+        account_user_address,
+        deleted_on
+    ) VALUES (
+        OLD.account_number,
+        OLD.account_user_social_number,
+        OLD.account_user_first_name,
+        OLD.account_user_last_name,
+        OLD.account_user_birthdate,
+        OLD.account_user_mother_full_name,
+        OLD.account_user_address,
+        NOW());
+RETURN OLD;
+END;
+$$;
+
+-- TRIGGER AFTER DELETE FOR THE log_account_user_deletes FUNCTION --
+
+CREATE TRIGGER after_delete_clients_info_trigger
+BEFORE DELETE ON clients_info
+FOR EACH ROW 
+EXECUTE FUNCTION log_account_user_deletes();
+
+-- LOG INTO THE clients_audits_withdraws TABLE THE USER WITHDRAWS BY THE withdraw_money FUNCTION --
+-- FUNCTION:
+CREATE OR REPLACE FUNCTION public.log_withdraw_money()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+VOLATILE NOT LEAKPROOF
+AS
+$$
+BEGIN
+    -- code
+    -- INSERT THE WITHDRAWN AMOUNT DATA IN THE clients_audits_withdraws LOG TABLE --
+	IF (NEW.account_balance < OLD.account_balance)
+	THEN
+	    INSERT INTO clients_audits_withdraws(
+	        account_number,
+	        withdraw_amount,
+	        amount_withdrawn_on
+	    ) VALUES (
+			OLD.account_number,
+	        (NEW.account_balance - OLD.account_balance),
+	        NOW());
+	END IF;
+RETURN NEW;
+END;
+$$;
+
+-- TRIGGER:
+CREATE TRIGGER on_withdraw_money
+AFTER UPDATE ON clients_info
+FOR EACH ROW 
+EXECUTE FUNCTION log_withdraw_money();
+
+-- LOG INTO THE clients_audits_deposits TABLE THE USER DEPOSITS BY THE deposit_money FUNCTION --
+-- FUNCTION:
+CREATE OR REPLACE FUNCTION public.log_deposit_money()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+VOLATILE NOT LEAKPROOF
+AS
+$$
+BEGIN
+    -- code
+    -- INSERT THE DEPOSIT AMOUNT DATA IN THE clients_audits_deposits LOG TABLE --
+	IF (NEW.account_balance > OLD.account_balance)
+	THEN
+	    INSERT INTO clients_audits_deposits(
+	        account_number,
+	        deposit_amount,
+	        amount_deposited_on
+	    ) VALUES (
+	        OLD.account_number,
+	        (NEW.account_balance - OLD.account_balance),
+	        NOW());
+	END IF;
+RETURN NEW;
+END;
+$$;
+
+-- TRIGGER:
+CREATE TRIGGER on_deposit_money
+AFTER UPDATE ON clients_info
+FOR EACH ROW
+EXECUTE FUNCTION log_deposit_money();
