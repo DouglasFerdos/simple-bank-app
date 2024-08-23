@@ -37,8 +37,8 @@ public class DataBaseIntegrationTest {
     BigDecimal accountBalance = money;
     BigDecimal withdrawAmount = new BigDecimal("357.93");
 
-	String username = "YourPostgreSQLUserHere";			// Insert your PostgreSQL username here - The default one is "postgres"
-	String password = "YourPostgreSQLPasswordHere";		// Insert your PostgreSQL password here - The one that you set in your first login in Postgres or PGAdmin
+    String username = "YourPostgreSQLUserHere";			// Insert your PostgreSQL username here - The default one is "postgres"
+    String password = "YourPostgreSQLPasswordHere";		// Insert your PostgreSQL password here - The one that you set in your first login in Postgres or PGAdmin
 
 
     @BeforeEach
