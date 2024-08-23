@@ -1,9 +1,9 @@
 -- SIMPLE BANK APP --
-
 -- ALL THE TRIGGERS FOR POSTGRESQL DB IN plpgsql --
 
 -- LOG INTO THE clients_audits_changes TABLE THE DATA CHANGED BY THE update_user_data FUNCTION --
-CREATE OR REPLACE FUNCTION public.log_account_user_changes()
+
+CREATE OR REPLACE FUNCTION log_account_user_changes()
 RETURNS TRIGGER
 VOLATILE NOT LEAKPROOF
 AS
@@ -15,7 +15,7 @@ BEGIN
         OR NEW.account_user_last_name <> OLD.account_user_last_name
         OR NEW.account_user_address <> OLD.account_user_address)
     THEN
-		INSERT INTO clients_audits_changes(
+	INSERT INTO clients_audits_changes(
             account_number,
             account_user_first_name,
             account_user_last_name,
@@ -41,7 +41,8 @@ EXECUTE FUNCTION log_account_user_changes();
 
 -- LOG INTO THE clients_audits_deletes TABLE THE DELETED USERS BY THE delete_user FUNCTION --
 -- FUNCTION THAT INSERTS THE DELETED DATA IN THE client_audits_deletes --
-CREATE OR REPLACE FUNCTION public.log_account_user_deletes()
+
+CREATE OR REPLACE FUNCTION log_account_user_deletes()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 VOLATILE NOT LEAKPROOF
@@ -81,7 +82,7 @@ EXECUTE FUNCTION log_account_user_deletes();
 
 -- LOG INTO THE clients_audits_withdraws TABLE THE USER WITHDRAWS BY THE withdraw_money FUNCTION --
 -- FUNCTION:
-CREATE OR REPLACE FUNCTION public.log_withdraw_money()
+CREATE OR REPLACE FUNCTION log_withdraw_money()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 VOLATILE NOT LEAKPROOF
@@ -97,7 +98,7 @@ BEGIN
 	        withdraw_amount,
 	        amount_withdrawn_on
 	    ) VALUES (
-			OLD.account_number,
+		OLD.account_number,
 	        (NEW.account_balance - OLD.account_balance),
 	        NOW());
 	END IF;
@@ -113,7 +114,7 @@ EXECUTE FUNCTION log_withdraw_money();
 
 -- LOG INTO THE clients_audits_deposits TABLE THE USER DEPOSITS BY THE deposit_money FUNCTION --
 -- FUNCTION:
-CREATE OR REPLACE FUNCTION public.log_deposit_money()
+CREATE OR REPLACE FUNCTION log_deposit_money()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 VOLATILE NOT LEAKPROOF
